@@ -345,27 +345,64 @@
 
         @media print {
             body {
-                background: white;
+                background: white !important;
+                color: black !important;
+                margin: 0;
+                padding: 0;
             }
 
-            .container,
-            .panel,
-            .header,
-            .api-config,
-            .btn,
-            .upload-zone,
-            .form-group {
+            /* Hide UI elements, but keep the resume container structure */
+            header, 
+            .panel, 
+            .step-nav, 
+            .btn, 
+            .upload-zone, 
+            .form-group, 
+            .loading-overlay,
+            .preview-area > div:first-child { 
                 display: none !important;
             }
 
+            /* Ensure the resume container specifically is visible */
             #resume-output {
-                position: absolute;
+                display: block !important;
+                visibility: visible !important;
+            }
+
+            .container {
+                max-width: 100% !important;
+                width: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+
+            .workspace {
+                display: block !important;
+                grid-template-columns: 1fr !important;
+            }
+
+            .preview-area {
+                position: static !important;
+                display: block !important;
+                max-height: none !important;
+                width: 100% !important;
+            }
+
+            #resume-output {
+                position: static !important;
                 top: 0;
                 left: 0;
-                width: 100%;
-                padding: 0;
-                box-shadow: none;
-                overflow: visible;
+                width: 100% !important;
+                padding: 0 !important;
+                box-shadow: none !important;
+                overflow: visible !important;
+                background: transparent !important;
+            }
+
+            /* Remove browser headers and footers headers and footers */
+            @page {
+                margin: 1cm;
+                size: auto;
             }
         }
 
@@ -584,6 +621,9 @@
         };
 
         initTheme();
+
+        // State for copying raw MD
+        let lastMarkdown = "";
 
         // UI Helpers
         window.saveKey = () => {
@@ -840,7 +880,11 @@
             try {
                 const result = await model.generateContent(prompt);
                 const response = await result.response;
-                const mdResume = response.text();
+                let mdResume = response.text();
+
+                // Clean up markdown code block wrappers if present
+                mdResume = mdResume.replace(/^```markdown\n?/, '').replace(/```$/, '').trim();
+                lastMarkdown = mdResume;
 
                 document.getElementById('resume-output').innerHTML = marked.parse(mdResume);
                 window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -854,8 +898,8 @@
         };
 
         window.copyToClipboard = () => {
-            const text = document.getElementById('resume-output').innerText;
-            navigator.clipboard.writeText(text).then(() => {
+            const textToCopy = lastMarkdown || document.getElementById('resume-output').innerText;
+            navigator.clipboard.writeText(textToCopy).then(() => {
                 alert("Copied to clipboard!");
             });
         };
